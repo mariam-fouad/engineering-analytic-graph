@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+ <title>project</title>
+  <script type="text/JavaScript" src="Chart.js"></script>
+  <script type="text/javascript" src="simple-excel.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+<script type="text/JavaScript">
+
+function div_hide(){
+document.getElementById('popupBig').style.display = "none";
+}
+      var openFile = function(event) {
+        div_hide();
+        document.getElementById("enteredDate").innerHTML=document.getElementById("date").value;
+        document.getElementById("enteredJobNumber").innerHTML=document.getElementById("jobNumber").value;
+        document.getElementById("enterdCustomer").innerHTML=document.getElementById("customerName").value;
+        document.getElementById("enterdComments").innerHTML=document.getElementById("comments").value;
+
+
+        var input = event.target;
+        var reader = new FileReader();
+        reader.onload = function(){
+          var text = reader.result;
+          var lines = text.split("\n");
+          var values = [];
+          var speed = [];
+          var pressure= [];
+          var rotation = [];
+          var torqe = [];
+          var checkFalseData =0;
+          var createTable = document.getElementById("table").checked;
+          var dataToFile ="distance,Speed,Force,Rotation,Torqe\n";
+          var filename= "file.csv";
+
+          var distanceChanelNumber =3;
+          var travelChanelNumber =5;
+          var timeChanelNumber =1;
+          var pressureChanelNumber =2;
+          var rotationChanelNumber =6;
+          var torqeChanelNumber =4;
+          var pipeChanelNumber =7;
+          var numberOfSecond = 2;
+          var depth;
+          var removeFalseData =0;
+
+
+          //spilt the csv file into 2d array
+          for (var j=0 ;j < lines.length-2 ; j++)
+          {
+            values[j]=lines[j+1].split(",");
+          }
+
+          //remove when changing the pipe data
+          for (var i=numberOfSecond;i<values.length;i+=block)
+          {
+            var currentPipeNumber = parseFloat (values[i][pipeChanelNumber]);
+            var distance = parseFloat(values[i][distanceChanelNumber]).toPrecision(3);
+            var counter =0;
+            if (currentPipeNumber != checkFalseData)
+            {
+              checkFalseData = currentPipeNumber;
+              if (i-2>0)
+              {
+                values.splice(i-2, 7);
+              }
+
+             }
+           }
+
+
+
+
+
+         //calc the speed with the block
+          var block = 1;
+          for (var i=0;i<values.length;i+=block)
+          {
+
+
+            var myDate = new Date(values[i][timeChanelNumber]);
+            var previousSpeedValue =0;
+            var previousRpmValue =0;
+
+              var distance21 = parseFloat(values[i][distanceChanelNumber]).toFixed(3);
+
+              var rotation2= parseFloat(values[i][rotationChanelNumber]);
+
+
+            if (i+block < values.length )
+            {
+              for (var j=i+block;j>i;j--)
+              {
+                var myDate2 = new Date(values[j][timeChanelNumber]);
+                //calc the diffrence between two dates
+                difBetweenDates = myDate2.getTime() - myDate.getTime();
+                seconds_Between_Dates = difBetweenDates / 1000;
+                if (seconds_Between_Dates<=((block+1)*2))
+                {
+
+
+                  var distance2 = parseFloat(values[j][distanceChanelNumber]).toFixed(3);
+                  currentSpeedValue= ((distance2-distance21)/seconds_Between_Dates)*60;
+
+
+                 var rotation21= parseFloat(values[j][rotationChanelNumber]);
+                 var currentRotationValue= ((rotation21-rotation2)*30);
+
+
+                 var depth = parseFloat(values[i][distanceChanelNumber]).toFixed(3);
+
+                  var pressure1=parseFloat(values[j][pressureChanelNumber]);
+                  var pressure2= parseFloat(values[i][pressureChanelNumber]);
+
+
+                  var torqe1= parseFloat(values[j][torqeChanelNumber]);
+                  var torqe2= parseFloat(values[i][torqeChanelNumber]);
+
+
+                  var speedValue = (currentSpeedValue).toFixed(3);
+                  var pressureValue = ((pressure1+pressure2)/(2)).toFixed(4);
+                  var rotationValue = (currentRotationValue).toFixed(3);
+                  var torqeValue = ((torqe1+torqe2)/(2)).toFixed(3);
+
+                  if (speedValue > 5.0)
+                  {
+                    speedValue = 5.0;
+                  }
+                  if (pressureValue<0)
+                  {
+                    pressureValue=0;
+                  }
+
+                  var speedObject = {x: speedValue,y: depth};
+                  var perssureObject = {x: pressureValue,y: depth};
+                  var rotationObject = {x: rotationValue,y: depth};
+                  var torqeObject = {x: torqeValue,y: depth};
+
+
+                  if (currentSpeedValue>0 && seconds_Between_Dates<=(numberOfSecond*2)+1)
+                  {
+
+                    if(parseFloat(removeFalseData) < parseFloat(depth))
+                    {
+                    removeFalseData = parseFloat(depth);
+                    dataToFile+=depth.toString()+","+speedValue.toString()+","+pressureValue.toString()+",";
+                    dataToFile+=rotationValue.toString()+","+torqeValue.toString()+"\n";
+                    speed.push(speedObject);
+                    pressure.push(perssureObject);
+                    rotation.push(rotationObject);
+                    torqe.push(torqeObject);
+
+                    break;
+                  }
+
+                  }
+
+                }
+
+              }
+            }
+        }
+        if (createTable)
+        {
+          var blob = new Blob([dataToFile], { type: 'text/csv;charset=utf-8;' });
+         if (navigator.msSaveBlob) { // IE 10+
+          navigator.msSaveBlob(blob, filename);
+          } else {
+          var link = document.createElement("a");
+          if (link.download !== undefined) { // feature detection
+              // Browsers that support HTML5 download attribute
+              var url = URL.createObjectURL(blob);
+              link.setAttribute("href", url);
+              link.setAttribute("download", filename);
+              link.style.visibility = 'hidden';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+          }
+      }
+        }
+
+        var speedLabels = speed.map(function(a) {return a.x;});
+        var distanceLebal = speed.map(function(a) {return a.y;});
+        var pressureLabels = pressure.map(function(a) {return a.x;});
+        var rotationLabels = rotation.map(function(a) {return a.x;});
+        var torqeLabels = torqe.map(function(a) {return a.x;});
+
+
+
+        var maxDistanceLebal  = Math.max.apply(Math, distanceLebal);
+
+
+
+        document.getElementById("speedDiagram").height = 2000;
+        document.getElementById("pressureDiagram").height = 2000;
+        document.getElementById("rotationDiagram").height = 2000;
+        document.getElementById("torqueDiagram").height = 2000;
+
+
+
+        //draw the speed diagram
+        var ctx = document.getElementById('speedDiagram').getContext('2d');
+        var chart = new Chart(ctx, {
+      // The type of chart we want to create
+      type: 'line',
+
+      // The data for our dataset
+      data: {
+          labels: speedLabels,
+          datasets: [{
+              label: "Penetration diagram",
+              borderColor: '#660000',
+              data:speed,
+              pointRadius: 0.5,
+              borderWidth: 1.5,
+              fill : false,
+          }]
+      },
+
+      // Configuration options go here
+      options: {
+        animation : false,
+        responsive: false,
+        legend: {
+        display: false
+         },
+        tooltips: {
+       callbacks: {
+          label: function(tooltipItem) {
+                 return tooltipItem.yLabel;
+          }
+       }
+   },
+        scales:
+        {
+          xAxes: [{
+            type: 'linear',
+            position: 'top',
+              display: true,
+              gridLines: {
+                color:"#a5a5a5",
+                 display:true
+             },
+             ticks: {
+              autoSkip: true,
+              maxTicksLimit: 6,
+              min: 0,
+              max: 5,
+              stepSize:1,
+              maxRotation: 0,
+              minRotation: 0,
+
+
+            },
+          },
+          {
+            type: 'linear',
+            position: 'bottom',
+              display: true,
+              gridLines: {
+                 color:"#a5a5a5",
+                 display:false
+             },
+             ticks: {
+              autoSkip: true,
+              maxTicksLimit:6,
+              min: 0,
+              max: 5,
+              stepSize:1,
+              maxRotation: 0,
+              minRotation: 0,
+
+            },
+          }
+        ],
+            yAxes: [{
+                display: true,
+                gridLines: {
+                     display:true,
+                     color:"#a5a5a5",
+                     drawBorder: true,
+                     drawTicks : false,
+
+                 },
+                 ticks: {
+                          stepSize:0.2,
+                          reverse: true,
+                          min :0,
+                          max: 22,
+                          padding:20,
+                      },
+            }],
+
+        }
+      }
+  });
+
+  /////////////
+
+
+          //draw the pressure diagram
+          var ctx1 = document.getElementById('pressureDiagram').getContext('2d');
+          var chart = new Chart(ctx1, {
+        // The type of chart we want to create
+        type: 'line',
+
+        // The data for our dataset
+        data: {
+            labels: pressureLabels,
+            datasets: [{
+                label: "pressure diagram",
+                borderColor: '#66004d',
+                data:pressure,
+                pointRadius: 0.5,
+                borderWidth: 1.5,
+                fill : false,
+
+            }]
+        },
+
+        // Configuration options go here
+        options: {
+          animation : false,
+          responsive: false,
+          legend: {
+          display: false
+           },
+          tooltips: {
+         callbacks: {
+            label: function(tooltipItem) {
+                   return tooltipItem.yLabel;
+            }
+         }
+     },
+          scales:
+          {
+            xAxes: [{
+              type: 'linear',
+              position: 'top',
+                display: true,
+                gridLines: {
+                  color:"#a5a5a5",
+                   display:true
+               },
+               ticks: {
+                autoSkip: true,
+                maxTicksLimit:5,
+                min: 0,
+                max: 4000,
+                stepSize:1000,
+                maxRotation: 0,
+                minRotation: 0,
+
+
+              },
+            },
+            {
+              type: 'linear',
+              position: 'bottom',
+                display: true,
+                gridLines: {
+                  color:"#a5a5a5",
+                   display:false
+               },
+               ticks: {
+                autoSkip: true,
+                maxTicksLimit: 5,
+                min: 0,
+                max: 4000,
+                stepSize:1000,
+                maxRotation: 0,
+                minRotation: 0,
+
+              },
+            }
+          ],
+              yAxes: [{
+                  display: true,
+                  gridLines: {
+                       display:true,
+                       color:"#a5a5a5",
+                       drawBorder: true,
+                       drawTicks : false,
+
+
+                   },
+                   ticks: {
+                            stepSize:0.2,
+                            reverse: true,
+                            display: false,
+                            min :0,
+                            max: 22,
+
+
+                        },
+              }],
+
+          }
+        }
+    });
+
+/////////
+
+
+          //draw the rotation diagram
+          var ctx2 = document.getElementById('rotationDiagram').getContext('2d');
+          var chart = new Chart(ctx2, {
+        // The type of chart we want to create
+        type: 'line',
+
+        // The data for our dataset
+        data: {
+            labels: rotationLabels,
+            datasets: [{
+                label: "rotation diagram",
+                borderColor: '#00664d',
+                data:rotation,
+                pointRadius: 0.5,
+                borderWidth: 1.5,
+                fill : false,
+
+            }]
+        },
+
+        // Configuration options go here
+        options: {
+          animation : false,
+          responsive: false,
+          legend: {
+          display: false
+           },
+          tooltips: {
+         callbacks: {
+            label: function(tooltipItem) {
+                   return tooltipItem.yLabel;
+            }
+         }
+     },
+          scales:
+          {
+            xAxes: [{
+              type: 'linear',
+              position: 'top',
+                display: true,
+                gridLines: {
+                  color:"#a5a5a5",
+                   display:true
+               },
+               ticks: {
+                autoSkip: true,
+                maxTicksLimit:7,
+                stepSize:100,
+                min: 0,
+                max: 500,
+                maxRotation: 0,
+                minRotation: 0,
+
+
+              },
+            },
+            {
+              type: 'linear',
+              position: 'bottom',
+                display: true,
+                gridLines: {
+                  color:"#a5a5a5",
+                   display:false
+               },
+               ticks: {
+                autoSkip: true,
+                maxTicksLimit: 7,
+                min: 0,
+                max: 500,
+                stepSize:100,
+                maxRotation: 0,
+                minRotation: 0,
+
+              },
+            }
+          ],
+              yAxes: [{
+                  display: true,
+                  gridLines: {
+                       display:true,
+                       color:"#a5a5a5",
+                       drawBorder: true,
+                       drawTicks : false,
+
+                   },
+                   ticks: {
+                            stepSize:0.2,
+                            reverse: true,
+                            display: false,
+                            min :0,
+                            max: 22,
+
+
+                        },
+              }],
+
+          }
+        }
+    });
+    //draw the torque diagram
+    var ctx3 = document.getElementById('torqueDiagram').getContext('2d');
+    var chart = new Chart(ctx3, {
+  // The type of chart we want to create
+  type: 'line',
+
+  // The data for our dataset
+  data: {
+      labels: torqeLabels,
+      datasets: [{
+          label: "torqe diagram",
+          borderColor: '#19334d',
+          data:torqe,
+          pointRadius: 0.5,
+          borderWidth: 1.5,
+          fill: false,
+
+      }]
+  },
+
+  // Configuration options go here
+  options: {
+    animation : false,
+    responsive: false,
+    legend: {
+    display: false
+     },
+    tooltips: {
+   callbacks: {
+      label: function(tooltipItem) {
+             return tooltipItem.yLabel;
+      }
+   }
+},
+    scales:
+    {
+      xAxes: [{
+        type: 'linear',
+        position: 'top',
+          display: true,
+          gridLines: {
+            color:"#a5a5a5",
+             display:true
+         },
+         ticks: {
+          autoSkip: true,
+          maxTicksLimit: 5,
+          stepSize:100,
+          min: 0,
+          max: 300,
+          maxRotation: 0,
+          minRotation: 0,
+
+
+        },
+      },
+      {
+        type: 'linear',
+        position: 'bottom',
+          display: true,
+          gridLines: {
+            color:"#a5a5a5",
+             display:false,
+         },
+         ticks: {
+          autoSkip: true,
+          maxTicksLimit: 5,
+          stepSize : 100,
+          min: 0,
+          max: 300,
+          maxRotation: 0,
+          minRotation: 0,
+
+        },
+      }
+    ],
+        yAxes: [{
+            display: true,
+            gridLines: {
+                 display:true,
+                 color:"#a5a5a5",
+                 drawBorder: true,
+                 drawTicks : false,
+             },
+             ticks: {
+                      stepSize:0.2,
+                      reverse: true,
+                      display: false,
+                      min :0,
+                      max: 22,
+
+                  },
+
+        }],
+
+    }
+  }
+});
+
+
+
+
+        };
+        reader.readAsText(input.files[0]);
+      };
+
+
+    </script>
+</head>
+
+<body>
+   <header>
+   </header>
+   <div id="popupBig">
+   <div id="popupContact">
+<!-- Contact Us Form -->
+ <form action="#" id="form" method="post" name="form">
+<img id="close" src="img1.jpg" width="100%" height="50%">
+<h2>Job Information</h2>
+<hr>
+<input id="date" name="date" placeholder="Date" type="text">
+<input id="jobNumber" name="jobNumber" placeholder="Job Number" type="text">
+<input id="customerName" name="customerName" placeholder="Customer" type="text">
+<br/>
+<textarea id="comments" name="comments" placeholder="Our Comments" type="text"></textarea>
+<br/>
+create table <input type="checkbox" id="table">
+<br/>
+<input type='file' id="file" onchange='openFile(event)'>
+</form>
+</div>
+<!-- Popup Div Ends Here -->
+</div>
+<div id="toPrint" >
+<img id="close" src="img1.jpg" width="300px" height="90px" class="imgStyle">
+     <br/>
+     <div id="reportFields">
+    <div id="contact">
+      Tel <Strong> 02 4480500 </strong> &nbsp;&nbsp;&nbsp;
+         <strong><u>best@emirates.net.ae</u></strong>
+      </div>
+      <br/>
+      <br/>
+     Date : <strong> <span id="enteredDate" class="report"></span></strong>
+     Job Number :<strong> <span id="enteredJobNumber"class="report"></span></strong>
+       <br>
+     Customer :<strong> <span id="enterdCustomer"class="report"></span></strong>
+     <br/>
+     Comments : <strong><span id ="enterdComments"class="report"></span></strong>
+     <br/>
+   </div>
+
+    <span>
+    <label for = "speedDiagram">
+       Penetration <br/> rate <br/>(m/min) <br/>
+        <canvas id="speedDiagram" width="190" height="400" style="inline-block"></canvas>
+    </label>
+  </span>
+  <span>
+    <label for = "pressureDiagram">
+       Force  <br/> (N) <br/>
+          <canvas id="pressureDiagram" width="160" height="400" style="inline-block"></canvas>
+    </label>
+  </span>
+  <span>
+    <label for = "rotationDiagram">
+       Rotation <br/> (rpm) <br/>
+          <canvas id="rotationDiagram" width="160" height="400" style="inline-block"></canvas>
+    </label>
+  </span>
+  <span>
+    <label for = "torqueDiagram">
+       Torque <br/> (NM) <br/>
+        <canvas id="torqueDiagram" width="160" height="400" style="inline-block"></canvas>
+    </label>
+  </span>
+</div>
+
+<footer></footer>
+
+</body>
+
+</html>

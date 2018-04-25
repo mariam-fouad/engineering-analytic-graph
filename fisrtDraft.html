@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+ <title>project</title>
+  <script type="text/JavaScript" src="Chart.js"></script>
+  <link rel="stylesheet" href="style.css">
+<script type="text/JavaScript">
+      var openFile = function(event) {
+        var input = event.target;
+        var reader = new FileReader();
+        reader.onload = function(){
+          var text = reader.result;
+          var lines = text.split("\n");
+          var values = [];
+          var speed = [];
+          var pressure= [];
+          var rotation = [];
+          var torqe = [];
+
+          var distanceChanelNumber =3;
+          var travelChanelNumber =5;
+          var timeChanelNumber =1;
+          var pressureChanelNumber =2;
+          var rotationChanelNumber =6;
+          var torqeChanelNumber =4;
+
+          //spilt the csv file into 2d array
+          for (var j=0 ;j < lines.length-2 ; j++)
+          {
+            values[j]=lines[j+1].split(",");
+          }
+          //calc the speed with the block
+          var block = 5;
+          for (var i=0;i<values.length;i+=block)
+          {
+            var myDate = new Date(values[i][timeChanelNumber]);
+
+            if (i+block < values.length)
+            {
+              for (var j=i+block;j>i;j--)
+              {
+                var myDate2 = new Date(values[j][timeChanelNumber]);
+                //calc the diffrence between two dates
+                var difBetweenDates = myDate2.getTime() - myDate.getTime();
+                var seconds_Between_Dates = difBetweenDates / 1000;
+                if (seconds_Between_Dates<=block+1)
+                {
+
+                  var distance1= parseFloat(values[j][distanceChanelNumber]).toPrecision(3);
+                  var distance2 = parseFloat(values[i][distanceChanelNumber]).toPrecision(3);
+
+                  var depth = parseFloat(values[i][distanceChanelNumber]).toPrecision(3);
+
+                  var pressure1=parseFloat(values[j][pressureChanelNumber]);
+                  var pressure2= parseFloat(values[i][pressureChanelNumber]);
+
+                  var rotation1= parseFloat(values[j][rotationChanelNumber]);
+                  var rotation2= parseFloat(values[i][rotationChanelNumber]);
+
+                  var torqe1= parseFloat(values[j][torqeChanelNumber]);
+                  var torqe2= parseFloat(values[i][torqeChanelNumber]);
+
+                  var speedValue = (((distance1-distance2)/(seconds_Between_Dates))*60).toPrecision(3);
+                  var pressureValue = ((pressure1+pressure2)/(2)).toPrecision(4);
+                  var rotationValue = ((rotation1+rotation2)/(2)*12).toPrecision(3);
+                  var torqeValue = ((torqe1+torqe2)/(2)).toPrecision(3);
+
+
+                  var speedObject = {x: speedValue,y: depth};
+                  var perssureObject = {x: pressureValue,y: depth};
+                  var rotationObject = {x: rotationValue,y: depth};
+                  var torqeObject = {x: torqeValue,y: depth};
+
+
+                  if (speedValue>0)
+                  {
+                  speed.push(speedObject);
+                  pressure.push(perssureObject);
+                  rotation.push(rotationObject);
+                  torqe.push(torqeObject);
+
+                  break;
+                  }
+
+                }
+
+              }
+            }
+        }
+        var speedLabels = speed.map(function(a) {return a.x;});
+        var distanceLebal = speed.map(function(a) {return a.y;});
+        var pressureLabels = pressure.map(function(a) {return a.x;});
+        var rotationLabels = rotation.map(function(a) {return a.x;});
+        var torqeLabels = torqe.map(function(a) {return a.x;});
+
+
+
+        var maxDistanceLebal  = Math.max.apply(Math, distanceLebal);
+
+
+
+        var diagramHeight = Math.round(maxDistanceLebal)*100;
+        document.getElementById("speedDiagram").height = diagramHeight;
+        document.getElementById("pressureDiagram").height = diagramHeight;
+        document.getElementById("rotationDiagram").height = diagramHeight;
+        document.getElementById("torqueDiagram").height = diagramHeight;
+
+
+
+
+
+
+
+        //draw the speed diagram
+        var ctx = document.getElementById('speedDiagram').getContext('2d');
+        var chart = new Chart(ctx, {
+      // The type of chart we want to create
+      type: 'line',
+
+      // The data for our dataset
+      data: {
+          labels: speedLabels,
+          datasets: [{
+              fill: false,
+              label: "speed diagram",
+              borderColor: '#660000',
+              data:speed,
+              pointRadius: 0.5,
+              borderWidth: 1,
+          }]
+      },
+
+      // Configuration options go here
+      options: {
+        animation : false,
+        responsive: false,
+        legend: {
+        display: false
+         },
+        tooltips: {
+       callbacks: {
+          label: function(tooltipItem) {
+                 return tooltipItem.yLabel;
+          }
+       }
+   },
+        scales:
+        {
+          xAxes: [{
+            type: 'linear',
+            position: 'top',
+              display: true,
+              gridLines: {
+                color:"#484545",
+                 display:true
+             },
+             ticks: {
+              autoSkip: true,
+              maxTicksLimit: 3,
+            },
+          },
+          {
+            position: 'bottom',
+              display: true,
+              gridLines: {
+                color:"#484545",
+                 display:false
+             },
+             ticks: {
+              autoSkip: true,
+              maxTicksLimit: 3,
+            },
+          }
+        ],
+            yAxes: [{
+                display: true,
+                gridLines: {
+                     display:false
+                 },
+                 ticks: {
+                          stepSize:0.2,
+                          reverse: true,
+                      },
+            }],
+
+        }
+      }
+  });
+
+  /////////////
+
+
+          //draw the pressure diagram
+          var ctx1 = document.getElementById('pressureDiagram').getContext('2d');
+          var chart = new Chart(ctx1, {
+        // The type of chart we want to create
+        type: 'line',
+
+        // The data for our dataset
+        data: {
+            labels: pressureLabels,
+            datasets: [{
+                fill: false,
+                label: "pressure diagram",
+                borderColor: '#66004d',
+                data:pressure,
+                pointRadius: 0.5,
+                borderWidth: 1,
+
+            }]
+        },
+
+        // Configuration options go here
+        options: {
+          animation : false,
+          responsive: false,
+          legend: {
+          display: false
+           },
+          tooltips: {
+         callbacks: {
+            label: function(tooltipItem) {
+                   return tooltipItem.yLabel;
+            }
+         }
+     },
+          scales:
+          {
+            xAxes: [{
+              position: 'top',
+                display: true,
+                gridLines: {
+                  color:"#484545",
+                   display:true
+               },
+               ticks: {
+                autoSkip: true,
+                maxTicksLimit: 3,
+              },
+            },
+            {
+              position: 'bottom',
+                display: true,
+                gridLines: {
+                  color:"#484545",
+                   display:false
+               },
+               ticks: {
+                autoSkip: true,
+                maxTicksLimit: 3,
+              },
+            }
+          ],
+              yAxes: [{
+                  display: false,
+                  gridLines: {
+                       display:false
+                   },
+                   ticks: {
+                            stepSize:0.2,
+                            reverse: true,
+
+                        },
+              }],
+
+          }
+        }
+    });
+
+/////////
+
+
+          //draw the rotation diagram
+          var ctx2 = document.getElementById('rotationDiagram').getContext('2d');
+          var chart = new Chart(ctx2, {
+        // The type of chart we want to create
+        type: 'line',
+
+        // The data for our dataset
+        data: {
+            labels: rotationLabels,
+            datasets: [{
+                fill: false,
+                label: "rotation diagram",
+                borderColor: '#00664d',
+                data:rotation,
+                pointRadius: 0.5,
+                borderWidth: 1,
+
+            }]
+        },
+
+        // Configuration options go here
+        options: {
+          animation : false,
+          responsive: false,
+          legend: {
+          display: false
+           },
+          tooltips: {
+         callbacks: {
+            label: function(tooltipItem) {
+                   return tooltipItem.yLabel;
+            }
+         }
+     },
+          scales:
+          {
+              xAxes: [{
+                position: 'top',
+                  display: true,
+                  gridLines: {
+                    color:"#484545",
+                     display:true
+                 },
+                 ticks: {
+                  autoSkip: true,
+                  maxTicksLimit: 3,
+                },
+              },
+              {
+                position: 'bottom',
+                  display: true,
+                  gridLines: {
+                    color:"#484545",
+                     display:false
+                 },
+                 ticks: {
+                  autoSkip: true,
+                  maxTicksLimit: 3,
+                },
+              }
+            ],
+              yAxes: [{
+                  display: false,
+                  gridLines: {
+                       display:false
+                   },
+                   ticks: {
+                            stepSize:0.2,
+                            reverse: true,
+
+                        },
+              }],
+
+          }
+        }
+    });
+    //draw the torque diagram
+    var ctx3 = document.getElementById('torqueDiagram').getContext('2d');
+    var chart = new Chart(ctx3, {
+  // The type of chart we want to create
+  type: 'line',
+
+  // The data for our dataset
+  data: {
+      labels: torqeLabels,
+      datasets: [{
+          fill: false,
+          label: "torqe diagram",
+          borderColor: '#19334d',
+          data:torqe,
+          pointRadius: 0.5,
+          borderWidth: 1,
+
+      }]
+  },
+
+  // Configuration options go here
+  options: {
+    animation : false,
+    responsive: false,
+    legend: {
+    display: false
+     },
+    tooltips: {
+   callbacks: {
+      label: function(tooltipItem) {
+             return tooltipItem.yLabel;
+      }
+   }
+},
+    scales:
+    {
+      xAxes: [{
+        position: 'top',
+          display: true,
+          gridLines: {
+            color:"#484545",
+             display:true
+         },
+         ticks: {
+          autoSkip: true,
+          maxTicksLimit: 3,
+        },
+      },
+      {
+        position: 'bottom',
+          display: true,
+          gridLines: {
+            color:"#484545",
+             display:false
+         },
+         ticks: {
+          autoSkip: true,
+          maxTicksLimit: 3,
+        },
+      }
+    ],
+        yAxes: [{
+            display: false,
+            gridLines: {
+                 display:false
+             },
+             ticks: {
+                      stepSize:0.2,
+                      reverse: true,
+
+                  },
+        }],
+
+    }
+  }
+});
+
+
+
+
+        };
+        reader.readAsText(input.files[0]);
+      };
+
+
+    </script>
+</head>
+
+<body>
+   <header>
+   </header>
+<input type='file' onchange='openFile(event)'><br>
+    <h1 id='output'></h1>
+    <span>
+    <label for = "speedDiagram">
+       Speed Diagram <br/>
+        <canvas id="speedDiagram" width="160" height="400" style="inline-block"></canvas>
+    </label>
+  </span>
+  <span>
+    <label for = "pressureDiagram">
+       Force Diagram <br/>
+          <canvas id="pressureDiagram" width="160" height="400" style="inline-block"></canvas>
+    </label>
+  </span>
+  <span>
+    <label for = "rotationDiagram">
+       Rotation Diagram <br/>
+          <canvas id="rotationDiagram" width="160" height="400" style="inline-block"></canvas>
+    </label>
+  </span>
+  <span>
+    <label for = "torqueDiagram">
+       Torqe Diagram <br/>
+        <canvas id="torqueDiagram" width="160" height="400" style="inline-block"></canvas>
+    </label>
+  </span>
+
+<footer></footer>
+
+</body>
+
+</html>

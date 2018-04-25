@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+ <title>login page</title>
+ <script type="text/JavaScript">
+ function validateForm() {
+     var password = document.forms["myForm"]["password"].value;
+     if (password !== "yxtnmjk1o") {
+       alert("sorry ,wrong password");
+         return false;
+     }
+ }
+</script>
+</head>
+<body>
+   <header>
+   </header>
+   <form name="myForm" action="fisrtDraft.html"  onsubmit="return validateForm()" >
+     <h1>welcome </h1>
+   username: <input id="username" type="text" value="username"/>
+   <br>
+   password: <input id="password" type="password"/>
+   <br>
+   <input id="submit" type="submit"/>
+    </form>
+
+<footer></footer>
+
+</body>
+
+</html>
